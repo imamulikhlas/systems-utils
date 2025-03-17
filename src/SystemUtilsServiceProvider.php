@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\SystemUtils;
+namespace AlexaFers\SystemUtils;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\View; // Add this missing import
+use Illuminate\Support\Facades\View;
 use Illuminate\Foundation\Application;
-use Vendor\SystemUtils\Services\PerformanceMonitor;
-use Vendor\SystemUtils\Middleware\SystemHealthCheck;
+use AlexaFers\SystemUtils\Services\PerformanceMonitor;
+use AlexaFers\SystemUtils\Middleware\SystemHealthCheck;
 
 class SystemUtilsServiceProvider extends ServiceProvider
 {

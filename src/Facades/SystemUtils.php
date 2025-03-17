@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\SystemUtils\Facades;
+namespace AlexaFers\SystemUtils\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
