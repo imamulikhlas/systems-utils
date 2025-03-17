@@ -31,6 +31,12 @@
             }
         }
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/imamulikhlas/systems-utils"
+        }
+    ],
     "minimum-stability": "dev",
     "prefer-stable": true
 }

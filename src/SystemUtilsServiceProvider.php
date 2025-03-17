@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\View; // Add this missing import
 use Illuminate\Foundation\Application;
 use Vendor\SystemUtils\Services\PerformanceMonitor;
 use Vendor\SystemUtils\Middleware\SystemHealthCheck;
