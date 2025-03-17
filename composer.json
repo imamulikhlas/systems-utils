@@ -37,6 +37,6 @@
             "url": "https://github.com/imamulikhlas/systems-utils"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }
