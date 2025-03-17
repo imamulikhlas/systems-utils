@@ -32,6 +32,10 @@ class PerformanceMonitor
      */
     public function startMetrics()
     {
+        Log::debug('PerformanceMonitor: Starting metrics collection');
+        Log::debug('PerformanceMonitor: App ID valid: ' . (!empty($this->appIdentifier) ? 'Yes' : 'No'));
+        Log::debug('PerformanceMonitor: Endpoint configured: ' . (!empty($this->metricEndpoint) ? 'Yes' : 'No'));
+        
         // Jika integritas sistem gagal, langsung set status ke false
         if (Cache::get('_system_integrity_failed', false)) {
             $this->status = false;
