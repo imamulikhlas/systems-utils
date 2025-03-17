@@ -2,7 +2,7 @@
     "name": "vendor/system-utils",
     "description": "System utility tools for Laravel",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
     "authors": [
         {
             "name": "AlexaFers",
