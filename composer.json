@@ -1,0 +1,36 @@
+{
+    "name": "vendor/system-utils",
+    "description": "System utility tools for Laravel",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "AlexaFers",
+            "email": "alexa@fers.com"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.0",
+        "illuminate/support": "^8.0|^9.0|^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Vendor\\SystemUtils\\": "src/"
+        },
+        "files": [
+            "src/bootstrap.php"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Vendor\\SystemUtils\\SystemUtilsServiceProvider"
+            ],
+            "aliases": {
+                "SystemUtils": "Vendor\\SystemUtils\\Facades\\SystemUtils"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
