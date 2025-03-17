@@ -1,5 +1,5 @@
 {
-    "name": "vendor/system-utils",
+    "name": "alexafers/system-utils",
     "description": "System utility tools for Laravel",
     "type": "library",
     "license": "MIT",
