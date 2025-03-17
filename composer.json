@@ -18,8 +18,7 @@
             "AlexaFers\\SystemUtils\\": "src/"
         },
         "files": [
-            "src/bootstrap.php",
-            "src/helpers.php"
+            "src/bootstrap.php"
         ]
     },
     "extra": {
