@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\SystemUtils\Services;
+namespace AlexaFers\SystemUtils\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;

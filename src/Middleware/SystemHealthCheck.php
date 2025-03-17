@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\SystemUtils\Middleware;
+namespace AlexaFers\SystemUtils\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
