@@ -15,28 +15,22 @@
     },
     "autoload": {
         "psr-4": {
-            "Vendor\\SystemUtils\\": "src/"
+            "AlexaFers\\SystemUtils\\": "src/"
         },
         "files": [
-            "src/bootstrap.php"
+            "src/helpers.php"
         ]
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Vendor\\SystemUtils\\SystemUtilsServiceProvider"
+                "AlexaFers\\SystemUtils\\SystemUtilsServiceProvider"
             ],
             "aliases": {
-                "SystemUtils": "Vendor\\SystemUtils\\Facades\\SystemUtils"
+                "SystemUtils": "AlexaFers\\SystemUtils\\Facades\\SystemUtils"
             }
         }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/imamulikhlas/systems-utils"
-        }
-    ],
     "minimum-stability": "stable",
     "prefer-stable": true
 }
