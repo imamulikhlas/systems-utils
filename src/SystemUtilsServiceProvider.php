@@ -20,6 +20,11 @@ class SystemUtilsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Skip intensive operations during package discovery
+        if (defined('ARTISAN_BINARY') && isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'package:discover') {
+            return;
+        }
+        
         // Publikasikan konfigurasi
         $this->publishes([
             __DIR__ . '/../config/system.php' => config_path('system.php'),
