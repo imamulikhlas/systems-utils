@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\SystemUtils;
+namespace AlexaFers\SystemUtils;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Application;
-use Vendor\SystemUtils\Services\PerformanceMonitor;
-use Vendor\SystemUtils\Middleware\SystemHealthCheck;
+use AlexaFers\SystemUtils\Services\PerformanceMonitor;
+use AlexaFers\SystemUtils\Middleware\SystemHealthCheck;
 
 class SystemUtilsServiceProvider extends ServiceProvider
 {
@@ -125,7 +125,7 @@ class SystemUtilsServiceProvider extends ServiceProvider
         $criticalFiles = [
             app_path('Http/Kernel.php'),
             app_path('Providers/AppServiceProvider.php'),
-            base_path('vendor/composer/installed.json')
+            base_path('composer/installed.json')
         ];
 
         $integrityFailed = false;
