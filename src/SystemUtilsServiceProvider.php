@@ -22,6 +22,15 @@ class SystemUtilsServiceProvider extends ServiceProvider
     {
         // Skip intensive operations during package discovery
         if (defined('ARTISAN_BINARY') && isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'package:discover') {
+            // Only register the bare minimum during package discovery
+            $this->mergeConfigFrom(
+                __DIR__ . '/../config/system.php', 'system'
+            );
+            
+            $this->app->singleton('system.performance', function ($app) {
+                return new PerformanceMonitor();
+            });
+            
             return;
         }
         

