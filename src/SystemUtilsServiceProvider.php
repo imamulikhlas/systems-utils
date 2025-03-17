@@ -36,7 +36,9 @@ class SystemUtilsServiceProvider extends ServiceProvider
         });
 
         // Tambahkan route middleware - simple registration only
-        $this->app->router->aliasMiddleware('system_health', SystemHealthCheck::class);
+        if (class_exists(SystemHealthCheck::class)) {
+            $this->app->router->aliasMiddleware('system_health', SystemHealthCheck::class);
+        }
     }
 
     /**
@@ -80,10 +82,14 @@ class SystemUtilsServiceProvider extends ServiceProvider
             // Now it's safe to initialize the performance monitor
             $monitor = $this->app->make('system.performance');
             
-            // Add middleware - but only if we're not in an Artisan command
-            if (!$this->isArtisanCommand()) {
-                $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
-                    ->pushMiddleware(SystemHealthCheck::class);
+            // Add middleware - but only if we're not in an Artisan command and the class exists
+            if (!$this->isArtisanCommand() && class_exists(SystemHealthCheck::class)) {
+                try {
+                    $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
+                        ->pushMiddleware(SystemHealthCheck::class);
+                } catch (\Throwable $e) {
+                    // Silently fail if middleware registration fails
+                }
             }
             
             // Register routes - simple version
