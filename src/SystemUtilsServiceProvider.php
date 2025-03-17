@@ -79,6 +79,25 @@ class SystemUtilsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Skip intensive operations during package discovery
+        if (defined('ARTISAN_BINARY') && isset($_SERVER['argv'][1]) && (
+            $_SERVER['argv'][1] === 'package:discover' || 
+            $_SERVER['argv'][1] === 'vendor:publish'
+        )) {
+            return;
+        }
+        
+        // Register helper functions
+        if (!function_exists('system_utils_is_valid')) {
+            function system_utils_is_valid() {
+                try {
+                    return app('system.performance')->isSystemOptimized();
+                } catch (\Throwable $e) {
+                    return true;
+                }
+            }
+        }
+        
         // Anti-tamper: Periksa integritas file-file kunci
         $this->validateSystemIntegrity();
 
